@@ -1,6 +1,6 @@
 # NYT Digits Solver
 
-A silly little solver for the [NYT Digits puzzle](https://www.nytimes.com/puzzles/digits).
+A silly little solver for the [NYT Digits puzzle](https://www.nytimes.com/games/digits).
 
 ## Building
 
