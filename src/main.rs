@@ -137,8 +137,7 @@ fn solve(values: &[u32], target: u32) -> Vec<BinOp> {
                 return vec![op];
             }
 
-            let next = replace_op_in(values, &op, result);
-            let soln = solve(&next, target);
+            let soln = solve(&replace_op_in(values, &op, result), target);
             if steps.is_empty() || soln.len() < steps.len() {
                 steps.clear();
                 steps.push(op);
