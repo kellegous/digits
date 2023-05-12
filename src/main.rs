@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::error::Error;
 
+mod b;
 #[derive(Parser, Debug)]
 struct Args {
     target: u32,
@@ -375,14 +376,16 @@ fn find_best(values: &[f64], target: f64) -> Option<Expr> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = Args::parse();
+    b::main()?;
 
-    args.values.sort();
+    // let mut args = Args::parse();
 
-    let values = args.values.iter().map(|&v| v as f64).collect::<Vec<_>>();
+    // args.values.sort();
 
-    let best = find_best(&values, args.target as f64).unwrap();
-    println!("{} = {}", best, best.eval());
+    // let values = args.values.iter().map(|&v| v as f64).collect::<Vec<_>>();
+
+    // let best = find_best(&values, args.target as f64).unwrap();
+    // println!("{} = {}", best, best.eval());
 
     Ok(())
 }
