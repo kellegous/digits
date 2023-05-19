@@ -1,5 +1,7 @@
 use clap::Parser;
+use std::collections::{HashMap, VecDeque};
 use std::io::prelude::*;
+use std::path::Iter;
 use std::{error::Error, io};
 
 #[derive(Debug, Clone)]
@@ -108,6 +110,61 @@ impl std::fmt::Display for BinOp {
     }
 }
 
+struct Solutions {
+    target: u32,
+    queue: VecDeque<(Vec<BinOp>, Vec<u32>)>,
+}
+
+impl Solutions {
+    fn from_puzzle(p: &Puzzle) -> Self {
+        let mut queue = VecDeque::new();
+        queue.push_back((vec![], p.values.clone()));
+        Self {
+            target: p.target,
+            queue,
+        }
+    }
+}
+
+impl Iterator for Solutions {
+    type Item = Vec<BinOp>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (ops, digits) = match self.queue.pop_front() {
+                Some(v) => v,
+                None => return None,
+            };
+
+            for (a, b) in all_pairs_in(&digits) {
+                let mut rest = digits.to_vec();
+                rest.remove(rest.iter().position(|&v| v == a).unwrap());
+                rest.remove(rest.iter().position(|&v| v == b).unwrap());
+                for op in BinOp::all_for(a, b) {
+                    let result = match op.apply() {
+                        Some(v) => v,
+                        None => continue,
+                    };
+
+                    let mut rest = rest.to_vec();
+                    rest.push(result);
+
+                    let mut ops = ops.to_vec();
+                    ops.push(op);
+
+                    self.queue.push_back((ops, rest));
+                }
+            }
+
+            if let Some(result) = ops.last().and_then(|op| op.apply()) {
+                if result == self.target {
+                    return Some(ops);
+                }
+            }
+        }
+    }
+}
+
 fn all_pairs_in(values: &[u32]) -> impl Iterator<Item = (u32, u32)> + '_ {
     values
         .iter()
@@ -122,6 +179,37 @@ fn replace_op_in(values: &[u32], op: &BinOp, res: u32) -> Vec<u32> {
     values[i] = res;
     values.remove(j);
     values
+}
+
+fn collect_solutions(
+    values: &[u32],
+    target: u32,
+    steps: &[BinOp],
+    solutions: &mut Vec<Vec<BinOp>>,
+) {
+    for (a, b) in all_pairs_in(values) {
+        let mut rest = values.to_vec();
+        rest.remove(rest.iter().position(|&v| v == a).unwrap());
+        rest.remove(rest.iter().position(|&v| v == b).unwrap());
+
+        for op in BinOp::all_for(a, b) {
+            let result = match op.apply() {
+                Some(v) => v,
+                None => continue,
+            };
+
+            let mut steps = steps.to_vec();
+            steps.push(op);
+
+            rest.push(result);
+            collect_solutions(&rest, target, &steps, solutions);
+            rest.pop();
+
+            if result == target {
+                solutions.push(steps);
+            }
+        }
+    }
 }
 
 fn solve(values: &[u32], target: u32) -> Vec<BinOp> {
@@ -160,6 +248,41 @@ fn main() -> Result<(), Box<dyn Error>> {
         for step in solve(&puzzle.values, puzzle.target) {
             println!("{} = {:3}", step, step.apply().unwrap());
         }
+
+        println!("------");
+
+        let mut stats = HashMap::new();
+
+        // let mut solutions = Vec::new();
+        // collect_solutions(&puzzle.values, puzzle.target, &[], &mut solutions);
+        // for solution in solutions {
+        //     *stats.entry(solution.len()).or_insert(0) += 1;
+        // }
+
+        for solution in Solutions::from_puzzle(&puzzle) {
+            *stats.entry(solution.len()).or_insert(0) += 1;
+        }
+
+        println!("{:?}", stats);
+        // let mut solutions = Vec::new();
+        // collect_solutions(&puzzle.values, puzzle.target, &[], &mut solutions);
+        // for solution in solutions {
+        //     if solution.len() == 5 {
+        //         for step in solution {
+        //             println!("{} = {:3}", step, step.apply().unwrap());
+        //         }
+        //         break;
+        //     }
+        // }
+
+        // for solution in Solutions::from_puzzle(&puzzle) {
+        //     if solution.len() == 5 {
+        //         for step in solution {
+        //             println!("{} = {:3}", step, step.apply().unwrap());
+        //         }
+        //         break;
+        //     }
+        // }
     } else {
         let stdin = io::stdin();
         let mut line = String::new();
@@ -181,6 +304,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             for step in solve(&puzzle.values, puzzle.target) {
                 println!("{} = {:3}", step, step.apply().unwrap());
+            }
+
+            println!("------");
+            let mut solutions = Vec::new();
+            collect_solutions(&puzzle.values, puzzle.target, &[], &mut solutions);
+            for solution in solutions {
+                if solution.len() == 5 {
+                    for step in solution {
+                        println!("{} = {:3}", step, step.apply().unwrap());
+                    }
+                    break;
+                }
             }
         }
     }
