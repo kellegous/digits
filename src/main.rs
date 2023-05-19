@@ -33,13 +33,12 @@ impl Puzzle {
 
                     let mut steps = steps.to_vec();
                     steps.push(op);
-
-                    rest.push(result);
-                    collect_solutions(&rest, target, &steps, solutions);
-                    rest.pop();
-
                     if result == target {
                         solutions.push(steps);
+                    } else {
+                        rest.push(result);
+                        collect_solutions(&rest, target, &steps, solutions);
+                        rest.pop();
                     }
                 }
             }
@@ -165,9 +164,9 @@ impl Strategy {
             Self::Shortest => a.len() > b.len(),
             Self::Longest => a.len() < b.len(),
             Self::MostDivides => {
-                let a = a.iter().filter(|op| op.op == Op::Div).count();
-                let b = b.iter().filter(|op| op.op == Op::Div).count();
-                a < b
+                let na = a.iter().filter(|op| op.op == Op::Div).count();
+                let nb = b.iter().filter(|op| op.op == Op::Div).count();
+                na < nb || (na == nb && a.len() > b.len())
             }
         }
     }
